@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Prompt Improver</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--muted:#9aa4b2;--accent:#7c5cff;--glass: rgba(255,255,255,0.04)}
+    *{box-sizing:border-box;font-family:Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#071028 0%, #0b1220 60%);color:#e6eef8}
+    .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:20px}
+    .card{width:760px;max-width:100%;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:14px;padding:20px;box-shadow:0 8px 30px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
+    .head{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+    .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#5cc3ff);display:grid;place-items:center;font-weight:700;color:#071028}
+    h1{font-size:18px;margin:0}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+
+    form{display:grid;gap:12px}
+    textarea{width:100%;min-height:120px;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit;resize:vertical;font-size:14px}
+    .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .btn{background:var(--accent);border:none;color:#071028;padding:10px 14px;border-radius:10px;font-weight:600;cursor:pointer;box-shadow:0 6px 18px rgba(124,92,255,0.18);flex:1}
+    .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);font-weight:600;flex:1}
+    .small{font-size:12px;color:var(--muted)}
+
+    .result{margin-top:12px;padding:12px;border-radius:10px;background:var(--glass);border:1px solid rgba(255,255,255,0.02);min-height:56px}
+    .result p{margin:0;white-space:pre-wrap}
+
+    .meta{display:flex;justify-content:space-between;align-items:center;margin-top:10px;flex-wrap:wrap;gap:6px}
+
+    .spinner{width:18px;height:18px;border-radius:50%;border:3px solid rgba(255,255,255,0.08);border-top-color:var(--accent);animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    .footer{margin-top:14px;color:var(--muted);font-size:12px;text-align:center}
+    .copy{background:transparent;border:none;color:var(--muted);cursor:pointer}
+
+    .toast{position:fixed;right:20px;bottom:20px;background:#071832;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);color:#cfe9ff;max-width:90%;word-wrap:break-word}
+
+    @media(max-width:600px){
+      h1{font-size:16px}
+      .btn,.btn.secondary{flex:1;min-width:120px}
+      textarea{min-height:100px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card" role="main">
+      <div class="head">
+        <div class="logo">PI</div>
+        <div>
+          <h1>Prompt Improver</h1>
+          <p class="lead">Paste any prompt and get a polished, professional version ready for AI models.</p>
+        </div>
+      </div>
+
+      <form id="app" autocomplete="off">
+        <label class="small">Your prompt</label>
+        <textarea id="prompt" placeholder="e.g. write me an email to my boss asking for sick leave"></textarea>
+
+        <div class="controls">
+          <button id="submit" class="btn" type="submit">Improve Prompt</button>
+          <button id="clear" class="btn secondary" type="button">Clear</button>
+          <div style="margin-left:auto;display:flex;gap:10px;align-items:center">
+            <span id="status" class="small">Ready</span>
+          </div>
+        </div>
+
+        <div class="result" id="result" aria-live="polite">
+          <p id="resultText">Your improved prompt will appear here.</p>
+        </div>
+
+        <div class="meta">
+          <div class="small">Response type: <strong>plain text</strong></div>
+          <div>
+            <button id="copyBtn" class="copy" type="button">Copy</button>
+          </div>
+        </div>
+
+      </form>
+
+      <div class="footer">Built by <code>Muhammad Ali</code> as a personal project.</div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" style="display:none"></div>
+
+  <script>
+    const form = document.getElementById('app');
+    const promptEl = document.getElementById('prompt');
+    const resultText = document.getElementById('resultText');
+    const statusEl = document.getElementById('status');
+    const copyBtn = document.getElementById('copyBtn');
+    const submit = document.getElementById('submit');
+    const clear = document.getElementById('clear');
+    const toast = document.getElementById('toast');
+
+    // replace with your actual n8n webhook URL (production one)
+    const WEBHOOK_URL = 'https://muhammadalii.app.n8n.cloud/webhook/prompt-improve';
+
+    const LIMIT = 3;
+    let used = parseInt(localStorage.getItem('prompt_uses') || '0');
+
+    function showToast(msg){
+      toast.textContent = msg; 
+      toast.style.display='block';
+      setTimeout(()=>toast.style.display='none',2200);
+    }
+
+    form.addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const prompt = promptEl.value.trim();
+      if(!prompt){ resultText.textContent='Please enter a prompt.'; return; }
+
+      if(used >= LIMIT){
+        resultText.textContent = "⚠️ You've reached the limit of 3 prompts.\n\nThis project is just a personal experiment running on a free trial, so executions are limited. Thanks for trying it!";
+        statusEl.textContent = 'Limit reached';
+        return;
+      }
+
+      resultText.textContent='';
+      statusEl.textContent='Sending...';
+      submit.disabled = true; submit.innerHTML = '<span class="spinner" aria-hidden></span> Working';
+
+      try{
+        const res = await fetch(WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt })
+        });
+
+        if(!res.ok){
+          const text = await res.text();
+          resultText.textContent = 'Error: ' + (text || res.statusText);
+          statusEl.textContent = 'Error';
+        } else {
+          const ct = res.headers.get('content-type') || '';
+          if(ct.includes('application/json')){
+            const j = await res.json();
+            const candidates = ['rewritten_prompt','rewritten','result','text','plainText'];
+            let out = null;
+            for(const k of candidates) if(j[k]){ out = j[k]; break; }
+            if(!out) out = JSON.stringify(j);
+            resultText.textContent = out;
+          } else {
+            const t = await res.text();
+            resultText.textContent = t;
+          }
+          statusEl.textContent = 'Done';
+
+          used++;
+          localStorage.setItem('prompt_uses', used);
+        }
+      }catch(err){
+        resultText.textContent = 'Network error: '+ (err.message || err);
+        statusEl.textContent = 'Network error';
+      } finally{
+        submit.disabled=false; submit.innerHTML='Improve Prompt';
+      }
+    });
+
+    clear.addEventListener('click', ()=>{
+      promptEl.value='';
+      resultText.textContent='Your improved prompt will appear here.';
+      statusEl.textContent='Ready';
+    });
+
+    copyBtn.addEventListener('click', async ()=>{
+      try{
+        await navigator.clipboard.writeText(resultText.textContent || '');
+        showToast('Copied to clipboard');
+      }catch(e){ showToast('Unable to copy'); }
+    });
+
+    promptEl.addEventListener('keydown', (e)=>{ 
+      if((e.ctrlKey||e.metaKey)&&e.key==='Enter') form.dispatchEvent(new Event('submit')) 
+    });
+  </script>
+</body>
+</html>
