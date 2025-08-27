@@ -1,6 +1,6 @@
 # 🚀 Prompt Improver (AI-Powered)
 
-A minimal, aesthetically pleasing web app that takes any user prompt and improves/expands it using an AI model (via **n8n backend + Google Gemini 1.5 Flash**).  
+A minimal web app that takes any user prompt and improves it using an AI model (via **n8n backend + Google Gemini 1.5 Flash**).  
 
 This project was built as an experimental tool to explore:
 - Building and deploying workflows in **n8n**.  
