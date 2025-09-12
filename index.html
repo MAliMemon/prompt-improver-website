@@ -4,81 +4,221 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Prompt Improver</title>
+
+  <!-- Inter font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <meta name="color-scheme" content="dark" />
   <style>
-    :root{--bg:#0f1724;--card:#0b1220;--muted:#9aa4b2;--accent:#7c5cff;--glass: rgba(255,255,255,0.04)}
-    *{box-sizing:border-box;font-family:Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
-    html,body{height:100%;margin:0;background:linear-gradient(180deg,#071028 0%, #0b1220 60%);color:#e6eef8}
-    .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:20px}
-    .card{width:760px;max-width:100%;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:14px;padding:20px;box-shadow:0 8px 30px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
-    .head{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
-    .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#5cc3ff);display:grid;place-items:center;font-weight:700;color:#071028}
-    h1{font-size:18px;margin:0}
-    p.lead{margin:0;color:var(--muted);font-size:13px}
+    :root{
+      --bg: #0b1220;
+      --bg-2: #070d1a;
+      --card: #0e1627;
+      --muted: #9aa4b2;
+      --text: #e6eef8;
+      --accent: #7c5cff;
+      --accent-2: #5cc3ff;
+      --glass: rgba(255,255,255,0.04);
+      --ring: rgba(124,92,255,0.55);
+      --border: rgba(255,255,255,0.06);
+    }
+    *{ box-sizing:border-box; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial }
+    html,body{ height:100%; margin:0; color:var(--text) }
 
-    form{display:grid;gap:12px}
-    textarea{width:100%;min-height:120px;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit;resize:vertical;font-size:14px}
-    .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .btn{background:var(--accent);border:none;color:#071028;padding:10px 14px;border-radius:10px;font-weight:600;cursor:pointer;box-shadow:0 6px 18px rgba(124,92,255,0.18);flex:1}
-    .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);font-weight:600;flex:1}
-    .small{font-size:12px;color:var(--muted)}
+    /* Subtle layered background */
+    body{
+      background:
+        radial-gradient(1200px 600px at 15% 10%, #122038 0%, rgba(18,32,56,0.0) 60%),
+        radial-gradient(1200px 600px at 85% 90%, #0b1b33 0%, rgba(11,27,51,0.0) 60%),
+        linear-gradient(180deg, var(--bg-2) 0%, var(--bg) 60%);
+      position:relative;
+      overflow-x:hidden;
+    }
+    body::before{
+      content:"";
+      position:fixed; inset:0;
+      background: radial-gradient(800px 400px at 70% -10%, rgba(124,92,255,0.12), transparent 60%),
+                  radial-gradient(800px 400px at -10% 80%, rgba(92,195,255,0.10), transparent 60%);
+      pointer-events:none;
+      z-index:0;
+    }
+    body::after{
+      /* very subtle noise */
+      content:"";
+      position:fixed; inset:0;
+      background-image: radial-gradient(rgba(255,255,255,0.04) 0.5px, transparent 0.5px);
+      background-size: 3px 3px;
+      opacity:0.06;
+      pointer-events:none;
+      z-index:0;
+    }
 
-    .result{margin-top:12px;padding:12px;border-radius:10px;background:var(--glass);border:1px solid rgba(255,255,255,0.02);min-height:56px}
-    .result p{margin:0;white-space:pre-wrap}
+    .wrap{ min-height:100%; display:flex; align-items:center; justify-content:center; padding:24px; position:relative; z-index:1 }
+    .card{
+      width:720px; max-width:100%;
+      background: linear-gradient(180deg, rgba(255,255,255,0.028), rgba(255,255,255,0.016));
+      border: 1px solid var(--border);
+      border-radius:16px;
+      padding:22px;
+      box-shadow:
+        0 20px 60px rgba(2,6,23,0.55),
+        inset 0 1px 0 rgba(255,255,255,0.04);
+      backdrop-filter: blur(8px);
+    }
 
-    .meta{display:flex;justify-content:space-between;align-items:center;margin-top:10px;flex-wrap:wrap;gap:6px}
+    .head{ display:flex; align-items:center; gap:14px; margin-bottom:14px; flex-wrap:wrap }
+    .logo{
+      width:44px;height:44px;border-radius:12px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      display:grid;place-items:center;
+      color:#071028;font-weight:800; letter-spacing:0.5px;
+      box-shadow: 0 10px 24px rgba(124,92,255,0.35);
+      user-select:none;
+    }
+    h1{ font-size:20px; margin:0 }
+    p.lead{ margin:2px 0 0; color:var(--muted); font-size:13px }
 
-    .spinner{width:18px;height:18px;border-radius:50%;border:3px solid rgba(255,255,255,0.08);border-top-color:var(--accent);animation:spin 1s linear infinite}
-    @keyframes spin{to{transform:rotate(360deg)}}
+    form{ display:grid; gap:12px }
+    label.small{ font-size:12px; color:var(--muted) }
 
-    .footer{margin-top:14px;color:var(--muted);font-size:12px;text-align:center}
-    .copy{background:transparent;border:none;color:var(--muted);cursor:pointer}
+    textarea{
+      width:100%; min-height:130px; padding:12px 12px 14px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.05);
+      background: rgba(255,255,255,0.02);
+      color:inherit; resize:vertical; font-size:14px; line-height:1.5;
+      outline:none;
+      transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+    }
+    textarea::placeholder{ color:#9aa4b2aa }
+    textarea:focus{
+      border-color: var(--ring);
+      box-shadow: 0 0 0 6px rgba(124,92,255,0.12);
+      background: rgba(255,255,255,0.03);
+    }
 
-    .toast{position:fixed;right:20px;bottom:20px;background:#071832;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);color:#cfe9ff;max-width:90%;word-wrap:break-word}
+    .controls{ display:flex; gap:10px; align-items:center; flex-wrap:wrap }
+    .btn{
+      --bg1: color-mix(in oklab, var(--accent) 92%, white 0%);
+      --bg2: color-mix(in oklab, var(--accent-2) 50%, var(--accent) 50%);
+      background: linear-gradient(135deg, var(--bg1), var(--bg2));
+      border:none; color:#071028;
+      padding:11px 16px; border-radius:12px; font-weight:700; cursor:pointer;
+      box-shadow: 0 8px 22px rgba(124,92,255,0.22);
+      transition: transform .06s ease, box-shadow .2s ease, filter .2s ease, opacity .2s ease;
+      flex:1;
+    }
+    .btn:hover{ transform: translateY(-1px); filter: brightness(1.03); box-shadow: 0 12px 28px rgba(124,92,255,0.28) }
+    .btn:active{ transform: translateY(0) scale(0.995) }
+    .btn[disabled]{ opacity:.6; cursor:not-allowed; transform:none }
 
-    @media(max-width:600px){
-      h1{font-size:16px}
-      .btn,.btn.secondary{flex:1;min-width:120px}
-      textarea{min-height:100px}
+    .btn.secondary{
+      background: transparent;
+      color: var(--muted);
+      border:1px solid var(--border);
+      box-shadow:none;
+    }
+    .btn.secondary:hover{
+      border-color: rgba(255,255,255,0.14);
+      color:#c9d4e3;
+    }
+
+    .small{ font-size:12px; color:var(--muted) }
+
+    .result{
+      margin-top:2px; padding:14px;
+      border-radius:12px;
+      background: var(--glass);
+      border:1px solid rgba(255,255,255,0.04);
+      min-height:64px;
+      position:relative;
+    }
+    .result p{ margin:0; white-space:pre-wrap }
+
+    .meta{ display:flex; justify-content:space-between; align-items:center; margin-top:8px; flex-wrap:wrap; gap:6px }
+
+    .spinner{ width:18px;height:18px;border-radius:50%;
+      border:3px solid rgba(255,255,255,0.1);
+      border-top-color: var(--accent);
+      animation: spin 1s linear infinite;
+      display:inline-block; vertical-align:-3px;
+    }
+    @keyframes spin{ to{ transform: rotate(360deg) } }
+
+    .footer{ margin-top:16px; color:var(--muted); font-size:12px; text-align:center }
+    .copy{
+      background: transparent; border:1px solid var(--border); color: #c9d4e3;
+      padding:6px 10px; border-radius:999px; cursor:pointer; font-size:12px;
+      transition: border-color .15s ease, color .15s ease, background .15s ease;
+    }
+    .copy:hover{ border-color: rgba(255,255,255,0.16); background: rgba(255,255,255,0.03) }
+
+    .toast{
+      position:fixed; right:20px; bottom:20px;
+      background:#0a1a32; padding:10px 14px; border-radius:12px;
+      border:1px solid rgba(255,255,255,0.06); color:#cfe9ff; max-width:90%;
+      word-wrap:break-word; box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+      z-index:10;
+    }
+
+    .kbd{
+      display:inline-flex; align-items:center; gap:4px;
+      padding:2px 8px; border-radius:6px; border:1px solid var(--border);
+      color:#c9d4e3; font-size:11px; background: rgba(255,255,255,0.02);
+    }
+
+    @media (max-width:600px){
+      h1{ font-size:18px }
+      .btn, .btn.secondary{ flex:1; min-width:140px }
+      textarea{ min-height:110px }
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      .btn, textarea:focus{ transition: none }
+      .spinner{ animation: none }
     }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="card" role="main">
+    <div class="card" role="main" aria-labelledby="title">
       <div class="head">
-        <div class="logo">PI</div>
+        <div class="logo" aria-hidden="true">PI</div>
         <div>
-          <h1>Prompt Improver</h1>
-          <p class="lead">Paste any prompt and get a polished, professional version ready for AI models.</p>
+          <h1 id="title">Prompt Improver</h1>
+          <p class="lead">Paste a prompt and get a clearer, more effective version—instantly.</p>
         </div>
       </div>
 
       <form id="app" autocomplete="off">
-        <label class="small">Your prompt</label>
-        <textarea id="prompt" placeholder="e.g. write me an email to my boss asking for sick leave"></textarea>
+        <label class="small" for="prompt">Your prompt</label>
+        <textarea id="prompt" placeholder="e.g., Draft a concise email to my manager requesting sick leave for tomorrow. Include a professional tone, a brief reason, and offer to provide documentation if needed."></textarea>
 
         <div class="controls">
-          <button id="submit" class="btn" type="submit">Improve Prompt</button>
+          <button id="submit" class="btn" type="submit">
+            Improve Prompt
+          </button>
           <button id="clear" class="btn secondary" type="button">Clear</button>
-          <div style="margin-left:auto;display:flex;gap:10px;align-items:center">
-            <span id="status" class="small">Ready</span>
+          <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+            <span id="status" class="small">Ready • <span class="kbd"><span>⌘/Ctrl</span>+<span>Enter</span></span></span>
           </div>
         </div>
 
-        <div class="result" id="result" aria-live="polite">
+        <div class="result" id="result" aria-live="polite" aria-busy="false">
           <p id="resultText">Your improved prompt will appear here.</p>
         </div>
 
         <div class="meta">
           <div class="small">Response type: <strong>plain text</strong></div>
           <div>
-            <button id="copyBtn" class="copy" type="button">Copy</button>
+            <button id="copyBtn" class="copy" type="button" title="Copy to clipboard">Copy</button>
           </div>
         </div>
-
       </form>
 
-      <div class="footer">Built by <code>Muhammad Ali</code> as a personal project.</div>
+      <div class="footer">Built by <code>Muhammad Ali</code> • Personal project</div>
     </div>
   </div>
 
@@ -91,35 +231,43 @@
     const statusEl = document.getElementById('status');
     const copyBtn = document.getElementById('copyBtn');
     const submit = document.getElementById('submit');
-    const clear = document.getElementById('clear');
+    const clearBtn = document.getElementById('clear');
     const toast = document.getElementById('toast');
+    const resultBox = document.getElementById('result');
 
-    // replace with your actual n8n webhook URL (production one)
-    const WEBHOOK_URL = 'https://muhammadalii.app.n8n.cloud/webhook/prompt-improve';
-
-    const LIMIT = 3;
-    let used = parseInt(localStorage.getItem('prompt_uses') || '0');
+   
+    const WEBHOOK_URL = 'http://207.154.196.133:5678/webhook/prompt-improve';
 
     function showToast(msg){
-      toast.textContent = msg; 
+      toast.textContent = msg;
       toast.style.display='block';
-      setTimeout(()=>toast.style.display='none',2200);
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(()=>toast.style.display='none', 2200);
     }
+
+    // Auto-resize textarea for a smoother feel
+    function autoResize(el){
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 600) + 'px';
+    }
+    promptEl.addEventListener('input', ()=>autoResize(promptEl));
+    // Initialize once on load in case of prefilled content
+    autoResize(promptEl);
 
     form.addEventListener('submit', async (e)=>{
       e.preventDefault();
       const prompt = promptEl.value.trim();
-      if(!prompt){ resultText.textContent='Please enter a prompt.'; return; }
-
-      if(used >= LIMIT){
-        resultText.textContent = "⚠️ You've reached the limit of 3 prompts.\n\nThis project is just a personal experiment running on a free trial, so executions are limited. Thanks for trying it!";
-        statusEl.textContent = 'Limit reached';
+      if(!prompt){
+        resultText.textContent='Please enter a prompt.';
+        promptEl.focus();
         return;
       }
 
       resultText.textContent='';
       statusEl.textContent='Sending...';
-      submit.disabled = true; submit.innerHTML = '<span class="spinner" aria-hidden></span> Working';
+      resultBox.setAttribute('aria-busy','true');
+      submit.disabled = true;
+      submit.innerHTML = '<span class="spinner" aria-hidden="true"></span> Working';
 
       try{
         const res = await fetch(WEBHOOK_URL, {
@@ -139,40 +287,49 @@
             const candidates = ['rewritten_prompt','rewritten','result','text','plainText'];
             let out = null;
             for(const k of candidates) if(j[k]){ out = j[k]; break; }
-            if(!out) out = JSON.stringify(j);
+            if(!out) out = typeof j === 'string' ? j : JSON.stringify(j, null, 2);
             resultText.textContent = out;
           } else {
             const t = await res.text();
             resultText.textContent = t;
           }
-          statusEl.textContent = 'Done';
-
-          used++;
-          localStorage.setItem('prompt_uses', used);
+          const now = new Date();
+          const hh = String(now.getHours()).padStart(2,'0');
+          const mm = String(now.getMinutes()).padStart(2,'0');
+          statusEl.textContent = `Done • ${hh}:${mm}`;
         }
       }catch(err){
-        resultText.textContent = 'Network error: '+ (err.message || err);
+        resultText.textContent = 'Network error: ' + (err?.message || err);
         statusEl.textContent = 'Network error';
       } finally{
-        submit.disabled=false; submit.innerHTML='Improve Prompt';
+        resultBox.setAttribute('aria-busy','false');
+        submit.disabled=false;
+        submit.textContent='Improve Prompt';
       }
     });
 
-    clear.addEventListener('click', ()=>{
+    clearBtn.addEventListener('click', ()=>{
       promptEl.value='';
+      autoResize(promptEl);
       resultText.textContent='Your improved prompt will appear here.';
-      statusEl.textContent='Ready';
+      statusEl.innerHTML = 'Ready • <span class="kbd"><span>⌘/Ctrl</span>+<span>Enter</span></span>';
+      promptEl.focus();
     });
 
     copyBtn.addEventListener('click', async ()=>{
       try{
-        await navigator.clipboard.writeText(resultText.textContent || '');
+        const text = (resultText.textContent || '').trim();
+        if(!text){ showToast('Nothing to copy'); return; }
+        await navigator.clipboard.writeText(text);
         showToast('Copied to clipboard');
       }catch(e){ showToast('Unable to copy'); }
     });
 
-    promptEl.addEventListener('keydown', (e)=>{ 
-      if((e.ctrlKey||e.metaKey)&&e.key==='Enter') form.dispatchEvent(new Event('submit')) 
+    // Keyboard shortcut: Ctrl/Cmd + Enter
+    promptEl.addEventListener('keydown', (e)=>{
+      if((e.ctrlKey||e.metaKey) && e.key === 'Enter'){
+        form.dispatchEvent(new Event('submit', {cancelable:true, bubbles:true}));
+      }
     });
   </script>
 </body>
